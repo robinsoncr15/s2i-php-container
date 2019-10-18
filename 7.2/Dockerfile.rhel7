@@ -42,12 +42,14 @@ LABEL summary="${SUMMARY}" \
       maintainer="SoftwareCollections.org <sclorg@redhat.com>"
 
 # Install Apache httpd and PHP
-RUN yum install -y yum-utils && \
+RUN yum-config-manager --add-repo=https://copr.fedoraproject.org/coprs/rhscl/centos-release-scl/repo/epel-7/rhscl-centos-release-scl-epel-7.repo && \
+    yum install -y yum-utils centos-release-scl && \
     prepare-yum-repositories rhel-server-rhscl-7-rpms && \
     INSTALL_PKGS="rh-php72 rh-php72-php rh-php72-php-mysqlnd rh-php72-php-pgsql rh-php72-php-bcmath \
                   rh-php72-php-gd rh-php72-php-intl rh-php72-php-ldap rh-php72-php-mbstring rh-php72-php-pdo \
                   rh-php72-php-process rh-php72-php-soap rh-php72-php-opcache rh-php72-php-xml \
-                  rh-php72-php-gmp rh-php72-php-pecl-apcu httpd24-mod_ssl" && \
+                  rh-php72-php-gmp rh-php72-php-pecl-apcu httpd24-mod_ssl \ 
+                  sclo-php72-php-pecl-redis4 sclo-php72-php-pecl-imagick" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum -y clean all --enablerepo='*'
@@ -74,6 +76,28 @@ COPY ./root/ /
 
 # Reset permissions of filesystem to default values
 RUN /usr/libexec/container-setup && rpm-file-permissions
+
+#Install NewRelic PHP Agent
+#Uncomment lines 82-94 to enable the New Relic Agent and edit line 89 with your NR key
+#RUN \
+#    wget -r -e robots=off -nd -A linux.tar.gz 'https://download.newrelic.com/php_agent/release/' && \
+#    tar zxf newrelic-php5*linux.tar.gz -C /tmp && \
+#    export NR_INSTALL_USE_CP_NOT_LN=1 && \
+#    export NR_INSTALL_SILENT=1 && \
+#    /tmp/newrelic-php5*/newrelic-install install && \
+#    rm -rf /tmp/newrelic-php5-* /tmp/nrinstall* newrelic-php5*linux.tar.gz && \
+#    sed -i -e 's/"REPLACE_WITH_REAL_KEY"/"<Type Real Key Here>"/' \
+#    -e 's/newrelic.appname = "PHP Application"/newrelic.appname = ${NEWRELIC_NAME}/' \
+#    /etc/opt/rh/rh-php${PHP_VER_SHORT}/php.d/newrelic.ini && \
+#    touch /var/log/newrelic/newrelic-daemon.log && \
+#    chmod a+rw /var/log/newrelic/newrelic-daemon.log && \
+#    rm -rf /var/cache/yum
+
+# Install WP-CLI
+RUN mkdir -p /opt/app-root/bin && \
+    curl -o /opt/app-root/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
+    chmod +x /opt/app-root/bin/wp && \
+    chown default:root /opt/app-root/bin/wp
 
 USER 1001
 
